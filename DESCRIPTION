@@ -1,0 +1,11 @@
+Package: combatapp
+Type: Package
+Title: Fit and apply a Combat model
+Version: 1.0
+Author: Rik de Wijn
+Description: Fit and apply a combat model using pgBatch
+Encoding: UTF-8
+LazyData: true
+Date: 3-Jul-2018
+Imports: pgBatch, reshape2, shiny, ggplot2, bnutil
+RoxygenNote: 6.0.1
