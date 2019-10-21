@@ -1,7 +1,7 @@
 Package: combatapp
 Type: Package
 Title: Fit and apply a Combat model
-Version: 1.1
+Version: 1.2
 Author: Rik de Wijn
 Description: Fit and apply a combat model using pgBatch
 Encoding: UTF-8
