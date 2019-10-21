@@ -125,9 +125,9 @@ shinyServerRun = function(input, output, session, context) {
                            groupingType = c("rowSeq", "colSeq", "QuantitationType"))
           result = AnnotatedData$new(data = dfXc, metadata = mdf)
         } else {
-          modellink =file.path(getRunFolder(), "modellink.RData")
+          modellink = file.path(getRunFolder(), "modellink.RData")
           save(file = modellink, aCom)
-          dfXc = data.frame(dfXc, modellink = modellink)
+          dfXc = data.frame(dfXc, modellink = as.character(modellink))
           mdf = data.frame(labelDescription = c("rowSeq", "colSeq", "CmbCor", "modellink"),
                            groupingType = c("rowSeq", "colSeq", "QuantitationType", "Array"))
           result = AnnotatedData$new(data = dfXc, metadata = mdf)

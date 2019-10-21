@@ -19,5 +19,4 @@ bnMessageHandler$getDataHandler = getdata
 bnMessageHandler$setResultHandler = setResult
 
 
-
 bnshiny::startBNTestShiny('combatapp', sessionType='run', bnMessageHandler=bnMessageHandler)
