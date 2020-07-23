@@ -11,12 +11,12 @@ shinyServerRun = function(input, output, session, context) {
     sidebarLayout(
       sidebarPanel(
         checkboxInput("applymode", "Apply saved model", FALSE),
-        conditionalPanel(condition = "!input.applymode",
-                         checkboxInput("useref", "Use a reference batch", value = FALSE),
-                         conditionalPanel(condition = 'input.useref',
-                                          selectInput("refbatch", "Select reference batch",choices = list())
-                         ),
-                         checkboxInput("returnlink", "Return link to Combat model", value = FALSE)
+        conditionalPanel(
+          condition = "!input.applymode",
+          checkboxInput("useref", "Use a reference batch", value = FALSE),
+          conditionalPanel(condition = 'input.useref', selectInput("refbatch", "Select reference variable",choices = list()) ),
+          selectInput("modeltype", "Type of model", choices =  c("L/S", "L")),
+          checkboxInput("returnlink", "Return link to Combat model", value = FALSE)
         ),
         conditionalPanel(condition = "input.applymode",
                          selectInput("modlink", "Select factor containing the model link", choices = list())
@@ -61,26 +61,42 @@ shinyServerRun = function(input, output, session, context) {
     updateSelectInput(session, "refbatch", label = lab, choices = levels(df$bv))
     updateSelectInput(session, "modlink", choices = bndata$arrayColumnNames)
 
+    lmodel = reactive({
+      return(input$modeltype == "L")
+    })
+
     comfit = reactive({
       X0 = acast(df, rowSeq ~ colSeq, value.var = "value")
       bv = acast(df,  rowSeq ~ colSeq, value.var = "bv")[1,]
+      bv = droplevels(factor(bv))
       rowSeq = acast(df,  rowSeq ~ colSeq, value.var = "rowSeq")[,1]
       colSeq = acast(df,  rowSeq ~ colSeq, value.var = "colSeq")[1,]
       dimnames(X0) = list(rowSeq = rowSeq, colSeq = colSeq)
       cmod = pgCombat$new()
       if(input$useref){
-        cmod = cmod$fit(X0, bv, ref.batch = input$refbatch)
+        cmod = cmod$fit(X0, bv, ref.batch = input$refbatch, mean.only = lmodel())
       } else {
-        cmod = cmod$fit(X0, bv)
+        cmod = cmod$fit(X0, bv, mean.only = lmodel())
       }
 
       return(cmod)
     })
 
+    modfile = reactive({
+      mfile = levels(factor(df[[input$modlink]]))
+      bFile = file.exists(mfile)
+      if (!any(bFile)) stop("Model link not found")
+      mfile = mfile[bFile]
+      if(length(mfile) > 1) stop("Incorrect model link")
+      return(mfile)
+
+    })
+
     comapply = reactive({
-      modlink = as.character(df[[input$modlink]][1])
+      modlink = modfile()
       X0 = acast(df, rowSeq ~ colSeq, value.var = "value")
       bv = acast(df,  rowSeq ~ colSeq, value.var = "bv")[1,]
+      bv = droplevels(factor(bv))
       rowSeq = acast(df,  rowSeq ~ colSeq, value.var = "rowSeq")[,1]
       colSeq = acast(df,  rowSeq ~ colSeq, value.var = "colSeq")[1,]
       dimnames(X0) = list(rowSeq = rowSeq, colSeq = colSeq)
@@ -88,6 +104,16 @@ shinyServerRun = function(input, output, session, context) {
       Xc = aCom$apply(X0, bv)
       dimnames(Xc) = dimnames(X0)
       result = list(X0 = X0, Xc = Xc, batches = bv)
+    })
+
+    settingsTable = reactive({
+      if(!input$applymode){
+        settings = data.frame(setting = c("applymode", "useref", "refbatch", "modeltype"),
+                            value  = c(input$applymode, input$useref,input$refbatch,input$modeltype))
+      } else{
+        settings = data.frame(setting = "applymode", value = input$applymode)
+      }
+      return(settings)
     })
 
     output$pca = renderPlot({
@@ -132,15 +158,14 @@ shinyServerRun = function(input, output, session, context) {
                            groupingType = c("rowSeq", "colSeq", "QuantitationType", "Array"))
           result = AnnotatedData$new(data = dfXc, metadata = mdf)
         }
+        settings = settingsTable()
+        save(file = file.path(getRunFolder(), "runSettings.RData"), settings)
         context$setResult(result)
         return("Done")
       } else {
         return(".")
       }
     })
-
-
-
   })
 }
 
@@ -150,16 +175,16 @@ shinyServerShowResults = function(input, output, session, context){
 
   output$body = renderUI({
     mainPanel(
-      verbatimTextOutput("combatlink")
+      tableOutput("combatlink")
     )
   })
 
   observe({
     getFolder = getFolderReactive$value
     if (is.null(getFolder)) return()
-
-    output$combatlink = renderText({
-      return("...")
+    load(file.path(getFolder(), "runSettings.RData"))
+    output$combatlink = renderTable({
+      settings
     })
   })
 }
