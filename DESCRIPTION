@@ -6,6 +6,6 @@ Author: Rik de Wijn
 Description: Fit and apply a combat model using pgBatch
 Encoding: UTF-8
 LazyData: true
-Date: 22-Oct-2019
+Date: 22-Oct-2020
 Imports: pgBatch (>= 1.5), reshape2, shiny, ggplot2, bnutil
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
